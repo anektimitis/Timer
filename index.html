@@ -2,164 +2,185 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Timer</title>
 <link rel="icon" type="image/png" href="icon.png">
 <style>
     html, body {
         height: 100%;
         margin: 0;
+        padding: 0;
         overflow: hidden;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #6a11cb, #2575fc);
+        background: linear-gradient(135deg, #1f1f1f, #3b3b3b);
+        font-family: Arial, sans-serif;
+        color: white;
     }
     .main-container {
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
-        width: 100%;
         height: 100%;
         position: relative;
     }
-    .timer-container {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 60px 40px 40px 40px;
-        border-radius: 20px;
-        text-align: center;
-        box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37);
-        backdrop-filter: blur(10px);
-        position: relative;
-    }
-    .time-display {
-        font-size: 6em;
-        color: #fff;
-        text-shadow: 0 0 20px #fff;
+    #timer {
+        font-size: 5rem;
+        font-weight: bold;
+        color: #00ffff;
+        text-shadow: 0 0 10px #00ffff, 0 0 20px #00cccc;
         margin-bottom: 20px;
     }
-    input[type="number"] {
-        padding: 10px;
-        border-radius: 10px;
+    #reset {
+        padding: 10px 20px;
+        font-size: 1.2rem;
+        background: #00ffff;
         border: none;
-        width: 80px;
-        font-size: 1.2em;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: 0 0 10px #00ffff;
+    }
+    #duration {
         position: absolute;
         bottom: 20px;
         right: 20px;
-    }
-    button {
-        padding: 15px 40px;
-        font-size: 1.5em;
+        padding: 5px 10px;
+        font-size: 1rem;
+        border-radius: 8px;
         border: none;
-        border-radius: 12px;
-        cursor: pointer;
-        background: linear-gradient(45deg, #ff416c, #ff4b2b);
-        color: #fff;
-        transition: 0.3s;
-        margin: 5px;
+        outline: none;
     }
-    button:hover {
-        transform: scale(1.1);
-        box-shadow: 0 0 25px #fff;
-    }
-    .logs-container {
+    #logs-container {
         position: absolute;
         bottom: 20px;
         left: 20px;
-        width: 170px;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 10px 15px;
-        border-radius: 15px;
-        box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37);
-        backdrop-filter: blur(10px);
-        color: #fff;
+        background: rgba(0,0,0,0.5);
+        padding: 10px;
+        border-radius: 8px;
+        width: 220px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
-    .logs-header {
+    #logs-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-weight: bold;
-        margin-bottom: 10px;
+        margin-bottom: 5px;
     }
-    .logs-content {
-        max-height: 200px;
-        overflow-y: auto;
-        font-size: 0.9em;
+    #clear-logs {
+        background: crimson;
+        color: white;
+        border: none;
+        padding: 2px 6px;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+    .log-item {
+        font-size: 0.9rem;
     }
 </style>
 </head>
 <body>
+
 <div class="main-container">
-    <div class="timer-container">
-        <div class="time-display" id="time">01:00</div>
-        <button id="resetBtn">Reset</button>
-    </div>
-    <input type="number" id="durationInput" min="1" value="1">
-    <div class="logs-container">
-        <div class="logs-header">
-            <span>Session Logs</span>
-            <button id="clearBtn" style="padding:5px 10px; font-size:0.9em;">Clear</button>
-        </div>
-        <div class="logs-content" id="logs"></div>
-    </div>
+    <div id="timer">01:00</div>
+    <button id="reset">Reset</button>
+    <input type="number" id="duration" min="1" value="60">
 </div>
+
+<div id="logs-container">
+    <div id="logs-header">
+        <span>Session Logs</span>
+        <button id="clear-logs">Clear</button>
+    </div>
+    <div id="logs"></div>
+</div>
+
 <script>
-    let defaultDuration = 60; // in seconds
-    let remainingTime = defaultDuration;
-    let timerInterval;
-    let sessionCount = 0;
-    let sessionStartTime = Date.now();
+let countdown;
+let timeLeft = 60;
+let startTime;
+let sessionCount = 0;
+const timerDisplay = document.getElementById('timer');
+const resetButton = document.getElementById('reset');
+const durationInput = document.getElementById('duration');
+const logsContainer = document.getElementById('logs');
+const clearLogsButton = document.getElementById('clear-logs');
 
-    const timeDisplay = document.getElementById('time');
-    const durationInput = document.getElementById('durationInput');
-    const resetBtn = document.getElementById('resetBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const logsDiv = document.getElementById('logs');
+function updateDisplay(seconds) {
+    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const s = String(seconds % 60).padStart(2, '0');
+    timerDisplay.textContent = `${m}:${s}`;
+}
 
-    function formatTime(seconds) {
-        const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-        const s = String(seconds % 60).padStart(2, '0');
-        return `${m}:${s}`;
-    }
-    function startTimer() {
-        clearInterval(timerInterval);
-        sessionStartTime = Date.now();
-        timerInterval = setInterval(() => {
-            if (remainingTime > 0) {
-                remainingTime--;
-                timeDisplay.textContent = formatTime(remainingTime);
-            } else {
-                clearInterval(timerInterval);
-            }
-        }, 1000);
-    }
-    function resetTimer() {
-        if (sessionStartTime) {
-            const elapsedSeconds = Math.round((Date.now() - sessionStartTime) / 1000);
-            if (elapsedSeconds > 0) {
-                sessionCount++;
-                const newLog = document.createElement('div');
-                newLog.innerHTML = `Session ${sessionCount}: ${elapsedSeconds} second(s)`;
-                logsDiv.prepend(newLog);
-            }
+function startCountdown() {
+    clearInterval(countdown);
+    startTime = Date.now();
+    countdown = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        timeLeft = parseInt(durationInput.value, 10) - elapsed;
+        updateDisplay(Math.max(timeLeft, 0));
+        if (timeLeft <= 0) {
+            clearInterval(countdown);
         }
-        const inputMinutes = parseInt(durationInput.value) || 1;
-        remainingTime = inputMinutes * 60;
-        timeDisplay.textContent = formatTime(remainingTime);
-        startTimer();
+    }, 1000);
+}
+
+function resetTimer() {
+    if (startTime) {
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        logSession(duration);
     }
-    function clearLogs() {
-        logsDiv.innerHTML = '';
-        sessionCount = 0;
+    timeLeft = parseInt(durationInput.value, 10);
+    updateDisplay(timeLeft);
+    startCountdown();
+}
+
+function logSession(duration) {
+    sessionCount++;
+    const logItem = document.createElement('div');
+    logItem.classList.add('log-item');
+
+    const sessionLabel = document.createElement('span');
+    sessionLabel.textContent = `Session ${sessionCount}: `;
+    sessionLabel.style.color = "white";
+
+    const durationSpan = document.createElement('span');
+    durationSpan.textContent = `${duration} seconds`;
+
+    const setTime = parseInt(durationInput.value, 10) || 60;
+    if (duration < setTime) {
+        durationSpan.style.color = "limegreen";
+    } else if (duration > setTime) {
+        durationSpan.style.color = "red";
+    } else {
+        durationSpan.style.color = "white";
     }
-    resetBtn.addEventListener('click', resetTimer);
-    clearBtn.addEventListener('click', clearLogs);
-    document.addEventListener('keydown', (e) => {
-        if (e.code === 'Space') {
-            e.preventDefault();
-            resetTimer();
-        }
-    });
-    startTimer();
+
+    logItem.appendChild(sessionLabel);
+    logItem.appendChild(durationSpan);
+    logsContainer.prepend(logItem);
+}
+
+resetButton.addEventListener('click', resetTimer);
+
+durationInput.addEventListener('change', () => {
+    timeLeft = parseInt(durationInput.value, 10);
+    updateDisplay(timeLeft);
+    startCountdown();
+});
+
+clearLogsButton.addEventListener('click', () => {
+    logsContainer.innerHTML = '';
+    sessionCount = 0;
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        e.preventDefault();
+        resetTimer();
+    }
+});
+
+updateDisplay(timeLeft);
+startCountdown();
 </script>
 </body>
 </html>

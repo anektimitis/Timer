@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shiny Countdown Timer</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: linear-gradient(135deg, #6a11cb, #2575fc);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        position: relative;
+    }
+    .timer-container {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 60px 40px 40px 40px;
+        border-radius: 20px;
+        text-align: center;
+        box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37);
+        backdrop-filter: blur(10px);
+        position: relative;
+    }
+    .time-display {
+        font-size: 6em;
+        color: #fff;
+        text-shadow: 0 0 20px #fff;
+        margin-bottom: 30px;
+    }
+    input[type="number"] {
+        padding: 10px;
+        border-radius: 10px;
+        border: none;
+        width: 80px;
+        font-size: 1.2em;
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+    }
+    button {
+        padding: 15px 40px;
+        font-size: 1.5em;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        background: linear-gradient(45deg, #ff416c, #ff4b2b);
+        color: #fff;
+        transition: 0.3s;
+        margin-top: 10px;
+    }
+    button:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 25px #fff;
+    }
+</style>
+</head>
+<body>
+<div class="timer-container">
+    <div class="time-display" id="time">01:00</div>
+    <button id="resetBtn">Reset</button>
+</div>
+<input type="number" id="durationInput" min="1" value="1">
+<script>
+    let defaultDuration = 60; // in seconds
+    let remainingTime = defaultDuration;
+    let timerInterval;
+
+    const timeDisplay = document.getElementById('time');
+    const durationInput = document.getElementById('durationInput');
+    const resetBtn = document.getElementById('resetBtn');
+
+    function formatTime(seconds) {
+        const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+        const s = String(seconds % 60).padStart(2, '0');
+        return `${m}:${s}`;
+    }
+
+    function startTimer() {
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            if (remainingTime > 0) {
+                remainingTime--;
+                timeDisplay.textContent = formatTime(remainingTime);
+            } else {
+                clearInterval(timerInterval);
+            }
+        }, 1000);
+    }
+
+    function resetTimer() {
+        const inputMinutes = parseInt(durationInput.value) || 1;
+        remainingTime = inputMinutes * 60;
+        timeDisplay.textContent = formatTime(remainingTime);
+        startTimer();
+    }
+
+    resetBtn.addEventListener('click', resetTimer);
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+            e.preventDefault();
+            resetTimer();
+        }
+    });
+
+    // Initialize
+    resetTimer();
+</script>
+</body>
+</html>

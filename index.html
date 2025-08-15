@@ -6,14 +6,19 @@
 <title>Timer</title>
 <link rel="icon" type="image/png" href="icon.png">
 <style>
-    body {
+    html, body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #6a11cb, #2575fc);
+    }
+    .main-container {
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 100vh;
-        background: linear-gradient(135deg, #6a11cb, #2575fc);
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        margin: 0;
+        width: 100%;
+        height: 100%;
         position: relative;
     }
     .timer-container {
@@ -29,7 +34,7 @@
         font-size: 6em;
         color: #fff;
         text-shadow: 0 0 20px #fff;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
     }
     input[type="number"] {
         padding: 10px;
@@ -50,37 +55,74 @@
         background: linear-gradient(45deg, #ff416c, #ff4b2b);
         color: #fff;
         transition: 0.3s;
-        margin-top: 10px;
+        margin: 5px;
     }
     button:hover {
         transform: scale(1.1);
         box-shadow: 0 0 25px #fff;
     }
+    .logs-container {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        width: 170px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 10px 15px;
+        border-radius: 15px;
+        box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37);
+        backdrop-filter: blur(10px);
+        color: #fff;
+    }
+    .logs-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    .logs-content {
+        max-height: 200px;
+        overflow-y: auto;
+        font-size: 0.9em;
+    }
 </style>
 </head>
 <body>
-<div class="timer-container">
-    <div class="time-display" id="time">01:00</div>
-    <button id="resetBtn">Reset</button>
+<div class="main-container">
+    <div class="timer-container">
+        <div class="time-display" id="time">01:00</div>
+        <button id="resetBtn">Reset / Start</button>
+    </div>
+    <input type="number" id="durationInput" min="1" value="1">
+    <div class="logs-container">
+        <div class="logs-header">
+            <span>Session Logs</span>
+            <button id="clearBtn" style="padding:5px 10px; font-size:0.9em;">Clear</button>
+        </div>
+        <div class="logs-content" id="logs"></div>
+    </div>
 </div>
-<input type="number" id="durationInput" min="1" value="1">
 <script>
     let defaultDuration = 60; // in seconds
     let remainingTime = defaultDuration;
     let timerInterval;
+    let sessionCount = 0;
+    let sessionStartTime = Date.now();
 
     const timeDisplay = document.getElementById('time');
     const durationInput = document.getElementById('durationInput');
     const resetBtn = document.getElementById('resetBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const logsDiv = document.getElementById('logs');
 
     function formatTime(seconds) {
         const m = String(Math.floor(seconds / 60)).padStart(2, '0');
         const s = String(seconds % 60).padStart(2, '0');
         return `${m}:${s}`;
     }
-
     function startTimer() {
         clearInterval(timerInterval);
+        sessionStartTime = Date.now();
         timerInterval = setInterval(() => {
             if (remainingTime > 0) {
                 remainingTime--;
@@ -90,24 +132,34 @@
             }
         }, 1000);
     }
-
     function resetTimer() {
+        if (sessionStartTime) {
+            const elapsedSeconds = Math.round((Date.now() - sessionStartTime) / 1000);
+            if (elapsedSeconds > 0) {
+                sessionCount++;
+                const newLog = document.createElement('div');
+                newLog.innerHTML = `Session ${sessionCount}: ${elapsedSeconds} second(s)`;
+                logsDiv.prepend(newLog);
+            }
+        }
         const inputMinutes = parseInt(durationInput.value) || 1;
         remainingTime = inputMinutes * 60;
         timeDisplay.textContent = formatTime(remainingTime);
         startTimer();
     }
-
+    function clearLogs() {
+        logsDiv.innerHTML = '';
+        sessionCount = 0;
+    }
     resetBtn.addEventListener('click', resetTimer);
+    clearBtn.addEventListener('click', clearLogs);
     document.addEventListener('keydown', (e) => {
         if (e.code === 'Space') {
             e.preventDefault();
             resetTimer();
         }
     });
-
-    // Initialize
-    resetTimer();
+    startTimer();
 </script>
 </body>
 </html>
